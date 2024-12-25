@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Data - Jessica Taylor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>Jessica Taylor - Patient Data</h1>
+        </header>
+
+        <main>
+            <section class="info">
+                <h2>Personal Information</h2>
+                <div class="details card">
+                    <img id="profilePic" src="" alt="Profile Picture" class="profile-img">
+                    <div>
+                        <p><strong>Name:</strong> <span id="name">Loading...</span></p>
+                        <p><strong>Age:</strong> <span id="age">Loading...</span></p>
+                        <p><strong>Blood Pressure:</strong> <span id="bp">Loading...</span></p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="chart">
+                <h2>Blood Pressure Over Time</h2>
+                <div class="card">
+                    <canvas id="bpChart"></canvas>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // JavaScript logic to fetch and display the data
+        document.addEventListener('DOMContentLoaded', () => {
+            const apiUrl = 'https://fedskillstest.coalitiontechnologies.workers.dev';
+            const patientName = 'Jessica Taylor';
+            const authHeader = 'Basic ' + btoa('coalition:skills-test');
+
+            fetch(apiUrl, { headers: { Authorization: authHeader } })
+            .then(response => response.json())
+            .then(data => {
+                const patient = data.find(p => p.name === patientName);
+
+                if (patient) {
+                    document.getElementById('name').textContent = patient.name;
+                    document.getElementById('age').textContent = patient.age;
+                    document.getElementById('profilePic').src = patient.profile_picture;
+
+                    const latestBloodPressure = patient.diagnosis_history[0]?.blood_pressure;
+
+                    if (latestBloodPressure) {
+                        document.getElementById('bp').textContent = `${latestBloodPressure.systolic.value}/${latestBloodPressure.diastolic.value} mmHg`;
+
+                        if (patient.diagnosis_history.length > 0) {
+                            const ctx = document.getElementById('bpChart').getContext('2d');
+                            new Chart(ctx, {
+                                type: 'line',
+                                data: {
+                                    labels: patient.diagnosis_history.map(h => h.year),
+                                    datasets: [
+                                        {
+                                            label: 'Systolic BP',
+                                            data: patient.diagnosis_history.map(h => h.blood_pressure.systolic.value),
+                                            borderColor: '#4bc0c0',
+                                            borderWidth: 2,
+                                            fill: false
+                                        },
+                                        {
+                                            label: 'Diastolic BP',
+                                            data: patient.diagnosis_history.map(h => h.blood_pressure.diastolic.value),
+                                            borderColor: '#ff6384',
+                                            borderWidth: 2,
+                                            fill: false
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    plugins: {
+                                        legend: { position: 'top' },
+                                        title: {
+                                            display: true,
+                                            text: 'Blood Pressure Over Time'
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                    } else {
+                        document.getElementById('bp').textContent = 'Blood Pressure data unavailable';
+                    }
+                } else {
+                    alert('Patient not found');
+                }
+            })
+            .catch(error => console.error('Error fetching data:', error));
+        });
+    </script>
+</body>
+</html>
